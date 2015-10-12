@@ -106,9 +106,9 @@ struct MsrInOut {
  * YOUR CODE HERE */
 
 struct PtreeInfo {
-	pid_t current_pid;
-	pid_t parent_pid;
-	char current_name[COMM_LEN_MAX];
+  pid_t current_pid;
+  pid_t parent_pid;
+  char current_name[COMM_LEN_MAX];
 };
 
 /* ioctl options */

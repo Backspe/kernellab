@@ -103,11 +103,11 @@ static long msrdrv_ioctl(struct file *f, unsigned int ioctl_num, unsigned long i
 int get_ptree(unsigned long ioctl_param) {
   /* implement get_ptree function
    * YOUR CODE HERE */
-	struct PtreeInfo* ptreeinfo = (struct PtreeInfo*) ioctl_param;
-	struct task_struct* current_task = pid_task(find_vpid(ptreeinfo->current_pid), PIDTYPE_PID);
-	ptreeinfo->parent_pid = current_task->parent->pid;
-	strncpy(ptreeinfo->current_name, current_task->comm, COMM_LEN_MAX);
-	ptreeinfo->current_name[COMM_LEN_MAX-1] = NULL;
+  struct PtreeInfo* ptreeinfo = (struct PtreeInfo*) ioctl_param;
+  struct task_struct* current_task = pid_task(find_vpid(ptreeinfo->current_pid), PIDTYPE_PID);
+  ptreeinfo->parent_pid = current_task->parent->pid;
+  strncpy(ptreeinfo->current_name, current_task->comm, COMM_LEN_MAX);
+  ptreeinfo->current_name[COMM_LEN_MAX-1] = NULL;
   return 0;
 }
 
