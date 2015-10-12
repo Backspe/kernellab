@@ -94,10 +94,10 @@ void print_header(char *name) {
   printf("\n");
 }
 
-void print_ptree(void) {
-  printf("- Process Tree Information\n\n");
-  /* implement a function to show process tree
-   * YOUR CODE HERE */
+int print_ptree(int fd, pid_t pid) {
+  printf("- Process Tree Information [pid: %d]\n\n", pid);
+	getPtree(fd, pid, 0);
+	return 0;
 }
 
 void print_profiling(long long nr_inst, long long st_cy, long long cy) {
@@ -118,9 +118,20 @@ void print_profiling(long long nr_inst, long long st_cy, long long cy) {
 }
 
 int getPtree(int fd, int pid) {
-  /* implement show process tree using ioctl
-   * YOUR CODE HERE */
-  return -1;
+	struct PtreeInfo pinf;
+	int i, stage;
+	pinf.current_pid = pid;
+	ioctl(fd, IOCTL_GET_PTREE, &pinf);
+	if(pinf.current_pid <= 1) {
+		stage = 0;
+	} else {
+		stage = getPtree(fd, pinf.parent_pid);
+		for(i = 0; i < stage; i++)
+			printf("  ");
+		printf("L ");
+	}
+	printf("%s\n", pinf.current_name);
+	return stage+1;
 }
 
 int getProfiling(int fd) {
@@ -141,6 +152,11 @@ int main(int argc, char* argv[]) {
   
   fd = load_device();
   
+  if((pid = fork()) == 0) {
+		execl(argv[1], argv[1], NULL);
+  } else {
+		print_ptree(fd, pid);
+  }
   /* implement a routine to fork & execute a given binary and
    * print process tree & profile it.
    * YOUR CODE HERE */

@@ -20,6 +20,8 @@
 #define MAJOR_NUM 1522
 #define MINOR_NUM 0
 
+#define COMM_LEN_MAX 16
+
 /* IA-32 Architectural MSRs Address */
 #define PERF_GLOBAL_CTRL  0x38f
 #define FIXED_CTR_CTRL    0x38d
@@ -103,7 +105,11 @@ struct MsrInOut {
 /* declare a struct for communicating with module
  * YOUR CODE HERE */
 
-struct PtreeInfo;
+struct PtreeInfo {
+	pid_t current_pid;
+	pid_t parent_pid;
+	char current_name[COMM_LEN_MAX];
+};
 
 /* ioctl options */
 #define IOCTL_GET_PTREE _IOWR(MAJOR_NUM, 0, struct PtreeInfo*)
