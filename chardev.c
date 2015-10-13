@@ -68,14 +68,21 @@ static ssize_t device_write(struct file *file,
 }
 
 static long long read_msr(unsigned int ecx) {
-  /* Implement inline assembly for reading msr
-   * YOUR CODE HERE */
-  return 0;
+  unsigned int edx = 0, eax = 0;
+  unsigned long long result = 0;
+  __asm__ __volatile__("rdmsr" : "=a"(eax), "=d"(edx) : "c"(ecx));
+  result = eax | (unsigned long long)edx << 0x20;
+#ifdef DEBUG
+  printk(KERN_ALERT "Module msrdrv: Read 0x%016llx (0x%08x:0x%08x) from MSR 0x%08x\n", result, edx, eax, ecx);
+#endif
+  return result;
 }
 
 static void write_msr(int ecx, unsigned int eax, unsigned int edx) {
-  /* Implement inline assembly for writing msr
-   * YOUR CODE HERE */
+#ifdef DEBUG
+  printk(KERN_ALERT "Module msrdrv: Writing 0x%08x:0x%08x to MSR 0x%04x\n", edx, eax, ecx);
+  __asm__ __volatile__("wrmsr" : : "c"(ecx), "a"(eax), "d"(edx));
+#endif
 }
 
 static long long read_tsc(void)
@@ -95,10 +102,53 @@ static long long read_tsc(void)
 
 static long msrdrv_ioctl(struct file *f, unsigned int ioctl_num, unsigned long ioctl_param)
 {
-  /* implement ioctl for handling msrdrv commands
-   * YOUR CODE HERE */
-  return -1; 
-}
+  struct MsrInOut *msrops;
+  int i;
+  if (ioctl_num != IOCTL_MSR_CMDS) {
+    return 0;
+  }
+  msrops = (struct MsrInOut*)ioctl_param;
+  for (i = 0 ; i <= MSR_VEC_LIMIT ; i++, msrops++) {
+    switch (msrops->op) {
+      case MSR_NOP:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": seen MSR_NOP command\n");
+#endif
+          break;
+      case MSR_STOP:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": seen MSR_STOP command\n");
+#endif
+          goto label_end;
+      case MSR_READ:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": seen MSR_READ command\n");
+#endif
+          msrops->value = read_msr(msrops->ecx);
+        break;
+      case MSR_WRITE:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": seen MSR_WRITE command\n");
+#endif
+          write_msr(msrops->ecx, msrops->eax, msrops->edx);
+        break;
+      case MSR_RDTSC:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": seen MSR_RDTSC command\n");
+#endif
+          msrops->value = read_tsc();
+        break;
+      default:
+#ifdef DEBUG
+        printk(KERN_ALERT "Module " DEV_NAME ": Unknown option 0x%x\n", msrops->op);
+#endif
+          return 1;
+    }
+  }
+label_end:
+
+  return 0;
+} 
 
 int get_ptree(unsigned long ioctl_param) {
   /* implement get_ptree function
