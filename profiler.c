@@ -36,9 +36,12 @@ struct MsrInOut msr_init[] = {
   { MSR_STOP, 0x00, 0x00 }
 };
 
-struct MsrInOut msr_set_start[] = {
-  /* make msr commands array to mornitor a process
-   * YOUR CODE HERE */
+struct MsrInOut msr_set_start[] = { 
+  { MSR_WRITE, PERF_EVT_SEL0, INST_RETIRED | PERF_EVT_SEL_USR | PERF_EVT_SEL_OS | PERF_EVT_SEL_TH | PERF_EVT_SEL_EN, 0x00 },
+  { MSR_WRITE, PERF_EVT_SEL1, RESOURCE_STALLS | PERF_EVT_SEL_USR | PERF_EVT_SEL_OS | PERF_EVT_SEL_TH | PERF_EVT_SEL_EN, 0x00 },
+  { MSR_WRITE, PERF_EVT_SEL2, CPU_CLK_UNHALTED | PERF_EVT_SEL_USR | PERF_EVT_SEL_OS | PERF_EVT_SEL_TH | PERF_EVT_SEL_EN, 0x00 },
+  { MSR_WRITE, PERF_GLOBAL_CTRL, PERF_GLOBAL_CTRL_EN_PMC0 | PERF_GLOBAL_CTRL_EN_PMC1 | PERF_GLOBAL_CTRL_EN_PMC2, 0x00},
+  { MSR_STOP, 0x00, 0x00 }
 };
 
 struct MsrInOut msr_stop_read[] = {
@@ -96,7 +99,7 @@ void print_header(char *name) {
 
 int print_ptree(int fd, pid_t pid) {
   printf("- Process Tree Information [pid: %d]\n\n", pid);
-  getPtree(fd, pid, 0);
+  getPtree(fd, pid);
   return 0;
 }
 
@@ -135,10 +138,13 @@ int getPtree(int fd, int pid) {
 }
 
 int getProfiling(int fd) {
-  /* implement a function to init & start pmu,
-   * get profiling result into array.
-   * YOUR CODE HERE */
-  return -1;
+  long long nr_inst = 1, st_cy = 1, cy = 1;
+  ioctl(fd, IOCTL_MSR_CMDS, msr_stop_read);
+  nr_inst = msr_stop_read[2].value;
+  st_cy = msr_stop_read[3].value;
+  cy = msr_stop_read[4].value;
+  print_profiling(nr_inst, st_cy, cy);
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -153,13 +159,15 @@ int main(int argc, char* argv[]) {
   fd = load_device();
   
   if((pid = fork()) == 0) {
+    ioctl(fd, IOCTL_MSR_CMDS, msr_init);
+    ioctl(fd, IOCTL_MSR_CMDS, msr_set_start);
     execl(argv[1], argv[1], NULL);
   } else {
+    print_header(argv[1]);
     print_ptree(fd, pid);
+    wait(0);
+    getProfiling(fd);
   }
-  /* implement a routine to fork & execute a given binary and
-   * print process tree & profile it.
-   * YOUR CODE HERE */
 
   close_device(fd);
   return 0;
