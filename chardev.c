@@ -81,8 +81,8 @@ static long long read_msr(unsigned int ecx) {
 static void write_msr(int ecx, unsigned int eax, unsigned int edx) {
 #ifdef DEBUG
   printk(KERN_ALERT "Module msrdrv: Writing 0x%08x:0x%08x to MSR 0x%04x\n", edx, eax, ecx);
-  __asm__ __volatile__("wrmsr" : : "c"(ecx), "a"(eax), "d"(edx));
 #endif
+  __asm__ __volatile__("wrmsr" : : "c"(ecx), "a"(eax), "d"(edx));
 }
 
 static long long read_tsc(void)
